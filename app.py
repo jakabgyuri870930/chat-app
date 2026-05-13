@@ -8,19 +8,25 @@ password = st.text_input("Enter Password:", type="password")
 
 if password != "mysecret123":
     st.warning("Please enter the password to access the AI.")
-    st.stop()
+    st.stop() 
 
 # 2. APP HEADER
 st.title("🤖 My Personal AI")
 st.write("Welcome to your private chat room!")
 
+# ---------------------------------------------------------
 # 3. THE BACKPACK (Session State Memory)
-if "chat_session" not in st.session_state:
-    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    today = datetime.now().strftime("%B %d, %Y")
-    bot_rules = f"You are a helpful, friendly AI assistant. You talk to the client like you are a female friend. Today is {today}."
+# FIX: We now save the phone line (client) inside the backpack too!
+# ---------------------------------------------------------
+if "client" not in st.session_state:
+    st.session_state.client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 
-    st.session_state.chat_session = client.chats.create(
+if "chat_session" not in st.session_state:
+    today = datetime.now().strftime("%B %d, %Y")
+    bot_rules = f"You are a helpful, friendly AI assistant. Today is {today}."
+    
+    # Notice we use st.session_state.client here now!
+    st.session_state.chat_session = st.session_state.client.chats.create(
         model='gemini-2.5-flash',
         config=types.GenerateContentConfig(system_instruction=bot_rules)
     )
@@ -43,8 +49,7 @@ if user_message:
         response = st.session_state.chat_session.send_message(user_message)
         with st.chat_message("assistant"):
             st.write(response.text)
-        st.session_state.messages.append(
-            {"role": "assistant", "content": response.text})
-
+        st.session_state.messages.append({"role": "assistant", "content": response.text})
+        
     except Exception as error_message:
         st.error(f"Connection glitch: {error_message}")
